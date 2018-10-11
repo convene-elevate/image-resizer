@@ -1,11 +1,11 @@
 /**
 Image modifier utilities
 
-Sample modifier strings, separated by a dash
+Sample paths,
 
-  - /s50/path/to/image.png
-  - /s50-gne/path/to/image.png
-  - /w300-h200/path/to/image.png
+  - /path/to/image.png?s=50
+  - /path/to/image.png?s=50&g=ne
+  - /path/to/image.png?w=300&h=200
   - /image.jpg
   - /path/to/image.png
   - /path/to/image.png.json
@@ -13,28 +13,28 @@ Sample modifier strings, separated by a dash
 
 Supported modifiers are:
 
-  - height:       eg. h500
-  - width:        eg. w200
-  - square:       eg. s50
-  - crop:         eg. cfill
-  - top:          eg. y12
-  - left:         eg. x200
-  - gravity:      eg. gs, gne
-  - filter:       eg. fsepia
-  - external:     eg. efacebook
-  - quality:      eg. q90
+  - height:       eg. h=500
+  - width:        eg. w=200
+  - square:       eg. s=50
+  - crop:         eg. c=fill
+  - top:          eg. y=12
+  - left:         eg. x=200
+  - gravity:      eg. g=s, g=ne
+  - filter:       eg. f=sepia
+  - external:     eg. e=facebook
+  - quality:      eg. q=90
 
 Crop modifiers:
   fit
      - maintain original proportions
      - resize so image fits wholly into new dimensions
-         - eg: h400-w500 - 400x600 -> 333x500
+         - eg: ?h=400&w=500 - 400x600 -> 333x500
      - default option
   fill
      - maintain original proportions
      - resize via smallest dimension, crop the largest
      - crop image all dimensions that dont fit
-         - eg: h400-w500 - 400x600 -> 400x500
+         - eg: ?h400&w=500 - 400x600 -> 400x500
   cut
      - maintain original proportions
      - no resize, crop to gravity or x/y
@@ -161,10 +161,7 @@ if (fs.existsSync(process.cwd() + '/named_modifiers.json')){
 function parseModifiers(mods, modArr) {
   var key, value, mod;
 
-  _.each(modArr, function(item){
-    key = item[0];
-    value = item.slice(1);
-
+  _.each(modArr, function(value, key){
     if (inArray(key, modKeys)){
 
       // get the modifier object that responds to the listed key
@@ -287,7 +284,7 @@ var limitMaxDimension = function(mods, env){
 // Exposed method to parse an incoming URL for modifiers, can add a map of
 // named (preset) modifiers if need be (mostly just for unit testing). Named
 // modifiers are usually added via config json file in root of application.
-exports.parse = function(requestUrl, namedMods, envOverride){
+exports.parse = function(request, namedMods, envOverride){
   // override 'env' for testing
   if(typeof envOverride !== 'undefined'){
     env = _.clone(envOverride);
@@ -300,8 +297,8 @@ exports.parse = function(requestUrl, namedMods, envOverride){
   gravity   = getModifier('g');
   crop      = getModifier('c');
   quality   = getModifier('q');
-  segments  = requestUrl.replace(/^\//,'').split('/');
-  modStr    = _.first(segments);
+  segments  = request.path.replace(/^\//,'').split('/');
+  modStr    = request.query;
   image     = _.last(segments).toLowerCase();
   namedMods = typeof namedMods === 'undefined' ? namedModifierMap : namedMods;
 
@@ -335,7 +332,7 @@ exports.parse = function(requestUrl, namedMods, envOverride){
   // check the request for available modifiers, unless we are restricting to
   // only named modifiers.
   if (!env.NAMED_MODIFIERS_ONLY) {
-    mods = parseModifiers(mods, modStr.split('-'));
+    mods = parseModifiers(mods, modStr);
   }
 
 

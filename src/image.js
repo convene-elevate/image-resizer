@@ -36,10 +36,10 @@ function Image(request){
   this.parseImage(request);
 
   // determine the requested modifications
-  this.modifiers = modifiers.parse(request.path);
+  this.modifiers = modifiers.parse(request);
 
-  // pull the various parts needed from the request params
-  this.parseUrl(request);
+  // account for any spaces in the path
+  this.path = decodeURI(request.path);
 
   // placeholder for the buffer/stream coming from s3, will hold the image
   this.contents = null;
@@ -85,27 +85,6 @@ Image.prototype.parseImage = function(request){
 
   this.image  = fileStr;
 };
-
-
-// Determine the file path for the requested image
-Image.prototype.parseUrl = function(request){
-  var parts = request.path.replace(/^\//,'').split('/');
-
-  // overwrite the image name with the parsed version so metadata requests do
-  // not mess things up
-  parts[parts.length - 1] = this.image;
-
-  // if there is a modifier string remove it
-  if (this.modifiers.hasModStr) {
-    parts.shift();
-  }
-
-  this.path = parts.join('/');
-
-  // account for any spaces in the path
-  this.path = decodeURI(this.path);
-};
-
 
 Image.prototype.isError = function(){ return this.error !== null; };
 
