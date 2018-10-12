@@ -1,69 +1,27 @@
 # Image-Resizer
 
-`image-resizer` is a [Node.js](http://nodejs.org) application that sits as a  custom origin to your CDN and will resize/optimise images on-the-fly. It is Heroku ready, but can also be deployed easily to any cloud provider (has been used with success on AWS).
+This is a modified version of the official npm package `image-resizer` found here: https://www.npmjs.com/package/image-resizer
+This documentation has been modified to denote the main changes and only include relevant information. 
 
-The primary goal for this project was to abstract the need to set image dimensions during the upload and storage phase of images in a modern web application.
-
+Specifically, this version has been modified so that image modifers are set via URL query string parameters, rather than being set in the URL path.
 
 ## Overview
 
-Building and deploying your own version of `image-resizer` is as easy as running the cli tool (`image-resizer new`), setting your [Heroku configs](#environment-variables) and firing it up!
-
-Based on Express.js `image-resizer` uses [sharp](https://github.com/lovell/sharp) under the hood to modify and optimise your images.
+`image-resizer` uses [sharp](https://github.com/lovell/sharp) under the hood to modify and optimise your images.
 
 There is also a plugin architecture that allows you to add your own image sources. Out of the box it supports: S3, Facebook, Twitter, Youtube, Vimeo (and local file system in development mode).
 
 When a new image size is requested of `image-resizer` via the CDN, it will pull down the original image from the cloud. It will then resize according to the requested dimensions, optimize according to file type and optionally filter the image. All responses are crafted with custom responses to maximise the facility of the CDN.
 
-
-## Getting Started
-
-    $ npm install -g image-resizer gulp
-    $ mkdir my_fancy_image_server
-    $ cd my_fancy_image_server
-    $ image-resizer new
-    $ npm install
-    $ gulp watch
-
-This will create a new directory structure including all the necessary files needed to run `image-resizer`. The money file is `index.js` which is loads the express configuration and routes.
-
-`image-resizer` can also simply be added as a node_module to any project and the streams interfaces used standalone. `./test.js` has a good example of how the app should work running behind Express.
-
-There is a [RubyGem](https://github.com/jimmynicol/ir-helper) of helpers (both Ruby and Javascript) to assist you in building the endpoints for your `image-resizer` instance.
-
-
-## Architecture
-
-The new refactored codebase now takes advantage of node streams. The [previous iteration](https://github.com/jimmynicol/image-resizer/tree/v0.0.1) was heavily based on promises but still ended up with spaghetti code to some extent.
-
-Inspired a lot by [Gulp](http://gulpjs.com) `image-resizer` passes around an Image object between each of the streams that contains information about the request and the image data (either as a buffer or stream).
-
-Images are also no longer modified and sent back to s3 for storage. The full power of the CDN is used for storing the modified images. This greatly improves performance both on the server side and client side. Google PageSpeed did not like the 302 redirects returned by an `image-resizer` instance.
-
-Also removing the need to push data to s3 helps the server processing as this can be a wildly inconsistent action.
-
-
-## Plugins
-
-`image-resizer` now supports a range of custom plugins for both image sources and filters. As mentioned above a number of sources are supported out of the box but each of these can be over written as needed.
-
-The directory structure created via `$ image-resizer new` will include a plugins directory where the initialization script will pick up any scripts and insert them into the application.
-
-
 ## Dependencies
 
-`image-resizer` only requires a working node/npm environment and `libvips`. The necessary buildpack information to load your Heroku environment is included.
-
+`image-resizer` only requires a working node/npm environment and `libvips`. 
 
 ## Environment Variables
 
-Configuration of `image-resizer` is done via environment variables. This is done to be compatible with Heroku deployments.
+Configuration of `image-resizer` is done via environment variables.
 
-To set environment variables in your [Heroku console](https://devcenter.heroku.com/articles/config-vars).
-
-    heroku config:set AWS_ACCESS_KEY_ID=abcd1234
-
-For Heroku deployment the minimum required variables are:
+The minimum required variables are:
 
     AWS_ACCESS_KEY_ID
     AWS_SECRET_ACCESS_KEY
@@ -136,7 +94,6 @@ The available variables are as follows:
   EXTERNAL_SOURCE_WIKIPEDIA: 'https://upload.wikimedia.org/wikipedia/'
 ```
 
-
 ## Optimization
 
 Optimization of images is done via [sharp](https://github.com/lovell/sharp#qualityquality). The environment variables to set are:
@@ -146,30 +103,25 @@ Optimization of images is done via [sharp](https://github.com/lovell/sharp#quali
 
 You may also adjust the image quality setting per request with the `q` quality modifier described below.
 
-## CDN
-
-While `image-resizer` will work as a standalone app, almost all of its facility is moot unless you run it behind a CDN. This has only been run behind AWS Cloudfront at this point and consequently all of the response headers are customized to work best in that environment. However other CDN's can not operate much differently, any pull requests in this regard would be most appreciated ;-)
-
-
 ## Usage
 
 A couple of routes are included with the default app, but the most important is the image generation one, which is as follows:
 
-`http://my.cdn.com/:modifiers/path/to/image.png[:format][:metadata]`
+`http://my.cdn.com/path/to/image.png[:format][:metadata]?{modifiers}`
 
-Modifiers are a dash delimited string of the requested modifications to be made, these include:
+Modifiers are query string parameters of the requested modifications to be made, they include:
 
 *Supported modifiers are:*
-* height:       eg. h500
-* width:        eg. w200
-* square:       eg. s50
-* crop:         eg. cfill
-* top:          eg. y12
-* left:         eg. x200
-* gravity:      eg. gs, gne
-* filter:       eg. fsepia
-* external:     eg. efacebook
-* quality:      eg. q90
+* height:       eg. h=500
+* width:        eg. w=200
+* square:       eg. s=50
+* crop:         eg. c=fill
+* top:          eg. y=12
+* left:         eg. x=200
+* gravity:      eg. g=s, g=ne
+* filter:       eg. f=sepia
+* external:     eg. e=facebook
+* quality:      eg. q=90
 
 *Crop modifiers:*
 * fit
@@ -195,16 +147,16 @@ Modifiers are a dash delimited string of the requested modifications to be made,
 
 
 *Examples:*
-* `http://my.cdn.com/s50/path/to/image.png`
-* `http://my.cdn.com/h50/path/to/image.png`
-* `http://my.cdn.com/h50-w100/path/to/image.png`
-* `http://my.cdn.com/s50-gne/path/to/image.png`
+* `http://my.cdn.com/path/to/image.png?s=50`
+* `http://my.cdn.com/path/to/image.png?h=50`
+* `http://my.cdn.com/path/to/image.png?h=50&w=100`
+* `http://my.cdn.com/path/to/image.png?s=50&g=ne`
 * `http://my.cdn.com/path/to/image.png` - original image request, will be optimized but not resized
 
 
 ## Resizing Logic
 
-It is worthy of note that this application will not scale images up, we are all about keeping images looking good. So a request for `h400` on an image of only 200px in height will not scale it up.
+It is worthy of note that this application will not scale images up, we are all about keeping images looking good. So a request for `?h=400` on an image of only 200px in height will not scale it up.
 
 
 ## S3 source
@@ -257,38 +209,3 @@ JPEG (`.jpg`/`.jpeg`), PNG (`.png`), and WEBP (`.webp`) output formats are suppo
 * `http://my.cdn.com/path/to/image.png.json`
 
 Metadata is removed in all other image requests by default, unless the env var `REMOVE_METADATA` is set to `false`.
-
-
-## Heroku Deployment
-
-Included are both a `.buildpacks` file and a `Procfile` ready for Heroku deployment. Run the following cmd in your Heroku console to enable the correct buildpacks (copied from [here](https://github.com/mcollina/heroku-buildpack-graphicsmagick)).
-
-    heroku config:set BUILDPACK_URL=https://github.com/ddollar/heroku-buildpack-multi
-
-The `.buildpacks` file will then take care of the installation process.
-
-As mentioned above there is a minimum set of config vars that need to be set before `image-resizer` runs correctly.
-
-It is also of note that due to some issues with GCC, `sharp` can not be used on the older Heroku stacks. Currently it requires `cedar-14` stack.
-
-
-## Local development
-
-To run `image-resizer` locally, the following will work for an OSX environment assuming you have node/npm installed - [NVM is useful](https://github.com/creationix/nvm).
-
-```bash
-npm install gulp -g
-./node_modules/image_resizer/node_modules/sharp/preinstall.sh
-npm install
-gulp watch
-```
-
-The gulp setup includes nodemon which runs the app nicely, restarting between code changes. `PORT` can be set in the `.env` file if you need to run on a port other than 3001.
-
-Tests can be run with: `gulp test`
-
-
-## Early promise-based version of codebase
-
-*NOTE:* Completely refactored and improved, if you are looking for the older version it is tagged as [v0.0.1](https://github.com/jimmynicol/image-resizer/tree/v0.0.1).
-
